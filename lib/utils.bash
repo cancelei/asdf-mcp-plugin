@@ -5,8 +5,9 @@ set -eu
 GH_REPO="https://github.com/model-context-protocol/mcp"
 
 fail() {
-  echo -e "asdf-mcp: $*"
-  exit 1
+  # Print to stderr and return non-zero to allow callers/tests to handle gracefully.
+  echo -e "asdf-mcp: $*" >&2
+  return 1
 }
 
 curl_opts="-fsSL"
