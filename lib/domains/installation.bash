@@ -55,6 +55,38 @@ install_local_llm() {
   # Implementation specific to Local LLM
 }
 
+install_github_server() {
+  local version="$1"
+  local install_path="$2"
+
+  echo "Installing GitHub MCP server version $version"
+
+  local platform="linux"
+  local arch="x64"
+  local download_url
+
+  if [ "$version" = "latest" ]; then
+    # Get the latest release URL
+    download_url=$(curl $curl_opts "https://api.github.com/repos/modelcontextprotocol/server-github/releases/latest" | grep "browser_download_url.*${platform}-${arch}" | cut -d '"' -f 4)
+  else
+    download_url="https://github.com/modelcontextprotocol/server-github/releases/download/${version}/server-github-${platform}-${arch}"
+  fi
+
+  if [ -z "$download_url" ]; then
+    fail "Could not determine download URL for GitHub MCP server $version"
+  fi
+
+  mkdir -p "$install_path"
+  curl $curl_opts -o "$install_path/github-server" "$download_url" || {
+    rm -rf "$install_path"
+    fail "Failed to download GitHub MCP server"
+  }
+
+  chmod +x "$install_path/github-server"
+
+  echo "GitHub MCP server installed successfully to $install_path"
+}
+
 install_custom_mcp() {
   local version="$1"
   local install_path="$2"

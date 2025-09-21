@@ -71,13 +71,14 @@ asdf mcp status
 This plugin currently supports the following MCP-compatible servers:
 
 - `claude-server`: Anthropic's Claude API compatible server
+- `github-server`: Official GitHub MCP server for repository management
 - `mcp-core`: Reference implementation of the MCP protocol
 - `local-llm`: For running local language models with MCP compatibility
 - `custom-mcp`: For custom MCP server implementations
 
 ## Contributing
 
-Contributions of any kind welcome!
+Contributions welcome. See CONTRIBUTING.md for workflow and CI details, and AGENTS.md (Repository Guidelines) for project structure, style, and key commands.
 
 ## License
 

@@ -14,6 +14,7 @@ load '../lib/utils.bash'
   run list_servers
   [ "$status" -eq 0 ]
   [[ "$output" == *"claude-server"* ]]
+  [[ "$output" == *"github-server"* ]]
   [[ "$output" == *"mcp-core"* ]]
 }
 
@@ -38,6 +39,19 @@ load '../lib/utils.bash'
   unstub npm
 }
 
+# Test install_github_server with mocks
+@test "install_github_server success" {
+  stub curl 'echo "https://example.com/download"'
+  stub curl 'echo "binary content"' : -o
+  temp_dir=$(mktemp -d)
+  run install_github_server "latest" "$temp_dir"
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"installed successfully"* ]]
+  [ -x "$temp_dir/github-server" ]
+  rm -rf "$temp_dir"
+  unstub curl
+}
+
 # Test start_server with mocks
 @test "start_server claude-server" {
   stub claude 'echo "running"'
@@ -46,6 +60,21 @@ load '../lib/utils.bash'
   [ "$status" -eq 0 ]
   unstub claude
   unstub asdf
+}
+
+@test "start_server github-server" {
+  stub asdf 'echo "mcp latest"'
+  temp_dir=$(mktemp -d)
+  mkdir -p "$temp_dir/github-server"
+  echo "#!/bin/bash" > "$temp_dir/github-server"
+  chmod +x "$temp_dir/github-server"
+  # Mock get_install_path to return temp_dir
+  stub get_install_path "echo '$temp_dir'"
+  run start_server "github-server"
+  [ "$status" -eq 0 ]
+  rm -rf "$temp_dir"
+  unstub asdf
+  unstub get_install_path
 }
 
 # Security test: malicious install_path

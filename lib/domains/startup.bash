@@ -37,6 +37,14 @@ start_server() {
       # Run the claude-code-mcp binary
       exec "$install_path/bin/claude-code-mcp"
       ;;
+    github-server)
+      # Source config file if provided (likely contains GITHUB_TOKEN)
+      if [ -n "$config" ] && [ -f "$config" ]; then
+        source "$config"
+      fi
+      # Run the github-server binary
+      exec "$install_path/github-server"
+      ;;
     *)
       fail "Starting server $server_name is not implemented yet"
       ;;

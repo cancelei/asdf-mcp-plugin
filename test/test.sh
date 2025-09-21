@@ -15,7 +15,7 @@ echo "Running tests..."
 # Test list_servers
 echo "Test: list_servers"
 output=$(list_servers)
-if echo "$output" | grep -q "claude-server" && echo "$output" | grep -q "mcp-core" && echo "$output" | grep -q "local-llm" && echo "$output" | grep -q "custom-mcp"; then
+if echo "$output" | grep -q "claude-server" && echo "$output" | grep -q "github-server" && echo "$output" | grep -q "mcp-core" && echo "$output" | grep -q "local-llm" && echo "$output" | grep -q "custom-mcp"; then
   echo "PASS"
 else
   echo "FAIL: list_servers output incorrect"

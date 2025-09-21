@@ -23,6 +23,7 @@ fi
 # List all available MCP server types
 list_servers() {
   echo "claude-server: Anthropic's Claude API compatible server"
+  echo "github-server: Official GitHub MCP server for repository management"
   echo "mcp-core: Reference implementation of the MCP protocol"
   echo "local-llm: For running local language models with MCP compatibility"
   echo "custom-mcp: For custom MCP server implementations"
@@ -39,6 +40,9 @@ install_server() {
   case "$server_name" in
     claude-server)
       install_claude_server "$version" "$install_path"
+      ;;
+    github-server)
+      install_github_server "$version" "$install_path"
       ;;
     mcp-core)
       install_mcp_core "$version" "$install_path"
