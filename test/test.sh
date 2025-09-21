@@ -285,7 +285,7 @@ curl() {
   fi
   return 0
 }
-install_github_server latest "$tmpdir"
+install_server github-server latest "$tmpdir"
 rm -rf "$tmpdir"
 unset -f curl || true
 

@@ -7,7 +7,7 @@
 - `.github/workflows/ci.yml`: CI for ShellCheck, shfmt, Bats, and Trivy.
 
 ## Build, Test, and Development Commands
-- Lint: `shellcheck bin/* lib/**/*.bash`
+- Lint: `./scripts/lint.sh` (runs ShellCheck on Bash scripts and yamllint on YAML files)
 - Format: `shfmt -i 2 -sr -w bin lib test`
 - Tests (Bats): `bats test/` (install bats-core/support/assert locally)
 - Fallback tests: `bash test/test.sh`
@@ -34,4 +34,5 @@
 ## Security & Configuration Tips
 - Claude server install requires Node.js ≥20 and npm. Verify with `node --version`.
 - Optional: set `GITHUB_API_TOKEN` to reduce GitHub API throttling.
+- Install yamllint via `pip install yamllint` for YAML linting.
 - Avoid echoing secrets; validate inputs and paths; keep scripts idempotent.
