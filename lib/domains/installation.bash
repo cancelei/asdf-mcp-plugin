@@ -24,6 +24,12 @@ install_claude_server() {
     }
   fi
 
+  # Run security audit
+  (cd "$install_path" && npm audit --audit-level=moderate) || {
+    rm -rf "$install_path"
+    fail "Security audit failed: vulnerabilities found in dependencies"
+  }
+
   # Verify installation
   if [ ! -x "$install_path/bin/claude-code-mcp" ]; then
     rm -rf "$install_path"

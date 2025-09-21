@@ -1,0 +1,56 @@
+name: CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    - name: Install ShellCheck
+      run: sudo apt-get update && sudo apt-get install -y shellcheck
+    - name: Run ShellCheck
+      run: |
+        shellcheck bin/* lib/**/*.bash
+        shellcheck --severity=error bin/* lib/**/*.bash
+
+  test:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    - name: Install Bats
+      run: sudo apt-get update && sudo apt-get install -y bats
+    - name: Run Bats Tests
+      run: bats test/ || bash test/test.sh
+
+  consistency:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    - name: Install shfmt
+      run: go install mvdan.cc/sh/v3/cmd/shfmt@latest
+    - name: Check formatting
+      run: shfmt -d bin/* lib/**/*.bash test/*
+
+  security:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    - name: Security Scan with Trivy
+      uses: aquasecurity/trivy-action@master
+      with:
+        scan-type: 'fs'
+        scan-ref: '.'
+        format: 'sarif'
+        output: 'trivy-results.sarif'
+        trivy-args: '--ignore-unfixed'
+      continue-on-error: true
+    - name: Upload Trivy scan results
+      uses: github/codeql-action/upload-sarif@v3
+      if: always()
+      with:
+        sarif_file: 'trivy-results.sarif'
