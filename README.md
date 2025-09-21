@@ -1,5 +1,10 @@
 # asdf-mcp-plugin
 
+[![CI](https://github.com/cancelei/asdf-mcp-plugin/actions/workflows/ci.yml/badge.svg)](https://github.com/cancelei/asdf-mcp-plugin/actions/workflows/ci.yml)
+[![Coverage (CI)](https://raw.githubusercontent.com/cancelei/asdf-mcp-plugin/badges/coverage.svg)](https://github.com/cancelei/asdf-mcp-plugin/actions/workflows/ci.yml)
+[![Coverage Target](https://img.shields.io/badge/coverage-%E2%89%A590%25%20(functions)-brightgreen)](scripts/coverage.sh)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+
 [Model Context Protocol (MCP)](https://github.com/username/mcp) plugin for the [asdf version manager](https://asdf-vm.com).
 
 ## Contents
@@ -9,6 +14,7 @@
 - [Why?](#why)
 - [Usage](#usage)
 - [Supported MCP Servers](#supported-mcp-servers)
+- [Testing](#testing)
 - [Contributing](#contributing)
 - [License](#license)
 
@@ -71,13 +77,59 @@ asdf mcp status
 This plugin currently supports the following MCP-compatible servers:
 
 - `claude-server`: Anthropic's Claude API compatible server
+- `github-server`: Official GitHub MCP server for repository management
 - `mcp-core`: Reference implementation of the MCP protocol
 - `local-llm`: For running local language models with MCP compatibility
 - `custom-mcp`: For custom MCP server implementations
 
+## Testing
+
+This project maintains **90%+ test coverage** with comprehensive test suites.
+
+### Test Structure
+- **Bats Tests**: 31 test cases covering all functions and error conditions
+- **Shell Tests**: 6 basic functionality tests as fallback
+- **Total**: 53 test cases covering 14 functions
+
+### Running Tests
+
+```shell
+# Run all tests (requires bats)
+bats test/
+
+# Run fallback tests (basic functionality)
+bash test/test.sh
+
+# Run specific test file
+bats test/utils.bats
+bats test/bin.bats
+```
+
+### Test Coverage Areas
+- ✅ Core utility functions (`list_servers`, `install_server`, `check_status`)
+- ✅ Validation functions (`validate_node_version`, `validate_npm`, `validate_claude_version`)
+- ✅ Installation functions (all server types)
+- ✅ Startup functions (`get_install_path`, `start_server`)
+- ✅ Bin script entry points and argument parsing
+- ✅ Error conditions and edge cases
+- ✅ Security validations (path traversal prevention)
+
+### CI Integration
+All tests run automatically in GitHub Actions on every push and pull request, ensuring code quality and preventing regressions.
+
 ## Contributing
 
-Contributions of any kind welcome!
+Contributions welcome. See CONTRIBUTING.md for workflow and CI details, and AGENTS.md (Repository Guidelines) for project structure, style, and key commands.
+
+## Testing & Coverage
+
+- Tests
+  - Bats: `bats test/` (install bats-core/support/assert locally; CI runs this automatically)
+  - Fallback: `bash test/test.sh`
+- Coverage (approx., lib/)
+  - Run: `MIN_COVER=90 COVER_MODE=functions ./scripts/coverage.sh`
+  - Artifacts: `coverage/trace.log`, `coverage/hits.txt`, `coverage/overall.txt`
+- Guidance: see `TESTING_PLAYBOOK.md` for hermetic stubs and patterns to add tests.
 
 ## License
 

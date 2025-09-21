@@ -1,0 +1,55 @@
+# OS
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# Editors/IDEs
+.idea/
+.vscode/
+*.iml
+*.swp
+*.swo
+*~
+.history/
+
+# Node & package managers
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+.npm/
+.pnpm-store/
+.cache/
+.eslintcache
+
+# Env & local config
+.env
+.env.*
+.envrc
+.direnv/
+
+# Builds & artifacts
+dist/
+build/
+out/
+tmp/
+temp/
+logs/
+*.log
+*.tgz
+*.tar.gz
+*.zip
+
+# Coverage & reports
+coverage/
+.nyc_output/
+coverage-*
+*.lcov
+*.sarif
+trivy-results.sarif
+
+# Misc
+*.bak
+*.orig
+*.rej

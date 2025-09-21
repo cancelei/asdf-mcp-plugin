@@ -1,74 +1,120 @@
 name: CI
 
+permissions:
+  contents: write
+
 on:
   push:
-    branches: [ main ]
   pull_request:
-    branches: [ main ]
+  workflow_dispatch:
 
 jobs:
   lint:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v4
-    - name: Install ShellCheck
-      run: sudo apt-get update && sudo apt-get install -y shellcheck
-    - name: Validate YAML
-      run: python3 -c "import yaml; [yaml.safe_load(open(f)) for f in ['.github/workflows/ci.yml']]; print('YAML valid')"
-    - name: Run ShellCheck
-      run: |
-        shellcheck bin/* lib/**/*.bash
-        shellcheck --severity=error bin/* lib/**/*.bash
-
-  test:
-    runs-on: ubuntu-latest
-    steps:
-    - uses: actions/checkout@v4
-    - name: Setup Bats Libraries
-      run: |
-        git clone https://github.com/bats-core/bats-support.git /tmp/bats-support
-        git clone https://github.com/bats-core/bats-assert.git /tmp/bats-assert
-    - uses: bats-core/bats-action@v1
-      with:
-        bats-args: test/
-        lib-path: /tmp/bats-support:/tmp/bats-assert
-    - name: Run Fallback Tests
-      if: failure()
-      run: bash test/test.sh
-    - name: Comment on PR
-      if: github.event_name == 'pull_request'
-      uses: peter-evans/create-or-update-comment@v3
-      with:
-        issue-number: ${{ github.event.pull_request.number }}
-        body: |
-          ## Test Results
-          - **Status**: ${{ steps.test.outcome == 'success' && '✅ Passed' || '❌ Failed' }}
-          - **Details**: See [Actions run](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}) for full logs.
-          Ensure all checks pass before merging.
+      - uses: actions/checkout@v4
+      - name: Install ShellCheck and yamllint
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y shellcheck
+          pipx install yamllint || pip install --user yamllint
+      - name: Run linters
+        run: |
+          bash scripts/lint.sh
 
   consistency:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v4
-    - uses: mvdan-cc/shfmt-action@v3
-      with:
-        shfmt-args: -d bin/* lib/**/*.bash test/*
+      - uses: actions/checkout@v4
+      - uses: mvdan-cc/shfmt-action@v3
+        with:
+          shfmt-args: -d bin/* lib/**/*.bash test/* scripts/*.sh
+
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup Bats Libraries
+        run: |
+          git clone https://github.com/bats-core/bats-support.git /tmp/bats-support
+          git clone https://github.com/bats-core/bats-assert.git /tmp/bats-assert
+      - uses: bats-core/bats-action@v1
+        with:
+          bats-args: test/
+          lib-path: /tmp/bats-support:/tmp/bats-assert
+      - name: Run fallback tests (shell)
+        run: bash test/test.sh
+
+  coverage:
+    runs-on: ubuntu-latest
+    needs: [test]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run approximate Bash coverage (lib only)
+        run: |
+          chmod +x scripts/coverage.sh
+          MIN_COVER=90 COVER_MODE=functions ./scripts/coverage.sh
+      - name: Upload coverage artifacts
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: bash-trace-coverage
+          path: |
+            coverage/trace.log
+            coverage/hits.txt
+            coverage/overall.txt
+      - name: Generate coverage badge
+        run: |
+          COV=$(cat coverage/overall.txt)
+          mkdir -p .badge
+          cat > .badge/coverage.svg <<SVG
+<svg xmlns="http://www.w3.org/2000/svg" width="140" height="20">
+  <linearGradient id="b" x2="0" y2="100%">
+    <stop offset="0" stop-color="#bbb" stop-opacity=".1"/>
+    <stop offset="1" stop-opacity=".1"/>
+  </linearGradient>
+  <mask id="a"><rect width="140" height="20" rx="3" fill="#fff"/></mask>
+  <g mask="url(#a)">
+    <rect width="85" height="20" fill="#555"/>
+    <rect x="85" width="55" height="20" fill="#4c1"/>
+    <rect width="140" height="20" fill="url(#b)"/>
+  </g>
+  <g fill="#fff" text-anchor="middle" font-family="DejaVu Sans,Verdana,Geneva,sans-serif" font-size="11">
+    <text x="43" y="15">coverage</text>
+    <text x="111" y="15">${COV}%</text>
+  </g>
+</svg>
+SVG
+      - name: Publish coverage badge to badges branch
+        run: |
+          git config user.name "github-actions"
+          git config user.email "github-actions@github.com"
+          git fetch origin badges || true
+          if git show-ref --quiet refs/heads/badges; then
+            git checkout badges
+          else
+            git checkout --orphan badges
+          fi
+          mv .badge/coverage.svg coverage.svg
+          git add coverage.svg
+          git commit -m "chore(badge): update coverage badge to ${COV}%" || echo "No changes to commit"
+          git push origin HEAD:badges --force
 
   security:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v4
-    - name: Security Scan with Trivy
-      uses: aquasecurity/trivy-action@master
-      with:
-        scan-type: 'fs'
-        scan-ref: '.'
-        format: 'sarif'
-        output: 'trivy-results.sarif'
-        trivy-args: '--ignore-unfixed'
-      continue-on-error: true
-    - name: Upload Trivy scan results
-      uses: github/codeql-action/upload-sarif@v3
-      if: always()
-      with:
-        sarif_file: 'trivy-results.sarif'
+      - uses: actions/checkout@v4
+      - name: Security Scan with Trivy
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: 'fs'
+          scan-ref: '.'
+          format: 'sarif'
+          output: 'trivy-results.sarif'
+          trivy-args: '--ignore-unfixed'
+        continue-on-error: true
+      - name: Upload Trivy scan results
+        uses: github/codeql-action/upload-sarif@v3
+        if: always()
+        with:
+          sarif_file: 'trivy-results.sarif'
