@@ -32,6 +32,7 @@ start_server() {
       # Source config file if provided
       if [ -n "$config" ] && [ -f "$config" ]; then
         # Assume config is a bash file with env vars
+        # shellcheck source=/dev/null
         source "$config"
       fi
       # Run the claude-code-mcp binary

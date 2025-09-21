@@ -55,7 +55,7 @@ get_arch() {
   case $arch in
     x86_64) arch="amd64" ;;
     aarch64) arch="arm64" ;;
-    *) arch="$arch" ;;
+    *) ;;
   esac
   echo "$arch"
 }
