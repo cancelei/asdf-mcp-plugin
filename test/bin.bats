@@ -4,8 +4,8 @@
 plugin_dir="$(cd "$(dirname "$BATS_TEST_FILENAME")/.." && pwd)"
 
 # Load bats support
-load '/tmp/bats-support/load'
-load '/tmp/bats-assert/load'
+load 'bats-support/load'
+load 'bats-assert/load'
 
 # Load the utils library
 load '../lib/utils.bash'
