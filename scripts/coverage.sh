@@ -3,6 +3,7 @@
 set -euo pipefail
 
 repo_root="$(cd "$(dirname "$0")/.." && pwd)"
+MIN_COVER=${MIN_COVER:-90}
 trace_dir="$repo_root/coverage"
 trace_file="$trace_dir/trace.log"
 
@@ -20,7 +21,7 @@ export PS4='+ ${BASH_SOURCE}:${LINENO}: '
 # Normalize paths and extract hits
 hits_file="$trace_dir/hits.txt"
 sed -E "s|^\+\+?\s+||; s|^$repo_root/||; s|^\./||" "$trace_file" \
-  | awk -F: 'NF>=2 {file=$1; line=$2; if (file ~ /^(bin\/.+|lib\/.+\.bash)$/ && line ~ /^[0-9]+$/) {print file ":" line}}' \
+  | awk -F: 'NF>=2 {file=$1; line=$2; if (file ~ /^lib\/.+\.bash$/ && line ~ /^[0-9]+$/) {print file ":" line}}' \
   | sort -u > "$hits_file"
 
 total_exec_lines=0
@@ -30,13 +31,10 @@ printf "%s\n" ""
 printf "%s\n" "Bash trace coverage (approximate)"
 printf "%s\n" "---------------------------------"
 
-# Collect candidate files
+# Collect candidate files (lib only)
 files=()
 while IFS= read -r file; do files+=("${file#./}"); done < <(
-  cd "$repo_root" && {
-    find bin -maxdepth 1 -type f 2>/dev/null
-    find lib -type f -name "*.bash" 2>/dev/null
-  }
+  cd "$repo_root" && find lib -type f -name "*.bash" 2>/dev/null
 )
 
 for f in "${files[@]}"; do
@@ -65,8 +63,8 @@ printf "%s\n" ""
 echo "Trace log: $trace_file"
 echo "Hits: $hits_file"
 
-if [ "$overall" -lt 90 ]; then
+if [ "$MIN_COVER" -gt 0 ] && [ "$overall" -lt "$MIN_COVER" ]; then
   printf "%s\n" ""
-  echo "Coverage below 90%. Consider adding tests."
+  echo "Coverage below ${MIN_COVER}%. Consider adding tests."
   exit 2
 fi

@@ -12,7 +12,8 @@
 - Tests (Bats): `bats test/` (install bats-core/support/assert locally)
 - Fallback tests: `bash test/test.sh`
 - Quick try: `bin/mcp-list-servers`, `bin/mcp-install claude-server latest ~/.asdf/installs/mcp/latest/servers/claude-server`, `bin/mcp-start claude-server`
- - Coverage (approx.): `./scripts/coverage.sh` (xtrace-based per-file report)
+- Coverage (approx.): `./scripts/coverage.sh` (xtrace-based, lib only)
+- Threshold: `MIN_COVER=90 ./scripts/coverage.sh` (set to 0 to only report)
 
 ## Coding Style & Naming Conventions
 - Bash with `set -euo pipefail`; prefer POSIX-compatible constructs.
