@@ -24,16 +24,17 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v4
-    - name: Install Bats and support
+    - name: Setup Bats Libraries
       run: |
-        sudo apt-get update && sudo apt-get install -y bats git
         git clone https://github.com/bats-core/bats-support.git /tmp/bats-support
         git clone https://github.com/bats-core/bats-assert.git /tmp/bats-assert
-    - name: Run Bats Tests
-      id: test
-      run: |
-        export BATS_LIB_PATH=/tmp/bats-support:/tmp/bats-assert
-        bats test/ || bash test/test.sh
+    - uses: bats-core/bats-action@v1
+      with:
+        bats-args: test/
+        lib-path: /tmp/bats-support:/tmp/bats-assert
+    - name: Run Fallback Tests
+      if: failure()
+      run: bash test/test.sh
     - name: Comment on PR
       if: github.event_name == 'pull_request'
       uses: peter-evans/create-or-update-comment@v3
