@@ -1,5 +1,10 @@
 # asdf-mcp-plugin
 
+[![CI](https://github.com/cancelei/asdf-mcp-plugin/actions/workflows/ci.yml/badge.svg)](https://github.com/cancelei/asdf-mcp-plugin/actions/workflows/ci.yml)
+[![Coverage (CI)](https://raw.githubusercontent.com/cancelei/asdf-mcp-plugin/badges/coverage.svg)](https://github.com/cancelei/asdf-mcp-plugin/actions/workflows/ci.yml)
+[![Coverage Target](https://img.shields.io/badge/coverage-%E2%89%A590%25%20(functions)-brightgreen)](scripts/coverage.sh)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+
 [Model Context Protocol (MCP)](https://github.com/username/mcp) plugin for the [asdf version manager](https://asdf-vm.com).
 
 ## Contents
@@ -115,6 +120,16 @@ All tests run automatically in GitHub Actions on every push and pull request, en
 ## Contributing
 
 Contributions welcome. See CONTRIBUTING.md for workflow and CI details, and AGENTS.md (Repository Guidelines) for project structure, style, and key commands.
+
+## Testing & Coverage
+
+- Tests
+  - Bats: `bats test/` (install bats-core/support/assert locally; CI runs this automatically)
+  - Fallback: `bash test/test.sh`
+- Coverage (approx., lib/)
+  - Run: `MIN_COVER=90 COVER_MODE=functions ./scripts/coverage.sh`
+  - Artifacts: `coverage/trace.log`, `coverage/hits.txt`, `coverage/overall.txt`
+- Guidance: see `TESTING_PLAYBOOK.md` for hermetic stubs and patterns to add tests.
 
 ## License
 

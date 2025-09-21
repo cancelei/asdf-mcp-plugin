@@ -126,6 +126,9 @@ printf "%s\n" ""
 echo "Trace log: $trace_file"
 echo "Hits: $hits_file"
 
+# Write machine-readable overall percentage
+echo "$overall" > "$trace_dir/overall.txt"
+
 if [ "$MIN_COVER" -gt 0 ] && [ "$overall" -lt "$MIN_COVER" ]; then
   printf "%s\n" ""
   echo "Coverage below ${MIN_COVER}%. Consider adding tests."
