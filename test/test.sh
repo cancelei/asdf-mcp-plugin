@@ -143,9 +143,9 @@ unset -f npm || true
 unset -f node || true
 
 echo "Extended: installation dispatch paths"
-install_server mcp-core "0.0.0" "/tmp/x" 2>/dev/null || true
-install_server local-llm "0.0.0" "/tmp/x" 2>/dev/null || true
-install_server custom-mcp "0.0.0" "/tmp/x" 2>/dev/null || true
+install_server mcp-core "0.0.0" "/tmp/x" || true
+install_server local-llm "0.0.0" "/tmp/x" || true
+install_server custom-mcp "0.0.0" "/tmp/x" || true
 
 echo "Extended: startup claude-server success in subshell"
 (
@@ -163,7 +163,7 @@ echo "Extended: startup claude-server success in subshell"
 ) || true
 
 echo "Extended: startup unknown"
-out=$(start_server unknown 2>&1 || true)
+out=$( ( set +e; start_server unknown ) 2>&1 )
 echo "$out" | grep -q "not implemented" && echo "PASS" || { echo "FAIL: unknown start not detected"; exit 1; }
 
 echo "Extended tests complete"
@@ -272,6 +272,23 @@ echo "More: install_github_server pinned success"
   rm -rf "$tmpdir"
 )
 
+echo "More: install_github_server latest success (direct, for coverage)"
+tmpdir=$(mktemp -d)
+curl() {
+  if echo "$*" | grep -q "/releases/latest"; then
+    echo '{"assets":[{"browser_download_url":"https://example.com/server-github-linux-x64"}]}'
+    return 0
+  fi
+  if [ "$2" = "-o" ]; then
+    printf '#!/usr/bin/env bash\nexit 0\n' > "$3"
+    return 0
+  fi
+  return 0
+}
+install_github_server latest "$tmpdir"
+rm -rf "$tmpdir"
+unset -f curl || true
+
 echo "More: install_github_server URL not found fails"
 (
   set -ex
@@ -279,7 +296,7 @@ echo "More: install_github_server URL not found fails"
   . ./lib/utils.bash
   tmpdir=$(mktemp -d)
   curl() { echo '{}'; }
-  out=$(install_github_server "latest" "$tmpdir" 2>&1 || true)
+  out=$( ( set +e; install_github_server "latest" "$tmpdir" ) 2>&1 )
   echo "$out" | grep -q "Could not determine download URL" && echo "PASS"
 )
 

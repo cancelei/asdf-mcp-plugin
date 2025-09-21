@@ -11,13 +11,13 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v4
-    - name: Install ShellCheck
-      run: sudo apt-get update && sudo apt-get install -y shellcheck
-    - name: Validate YAML
-      run: python3 -c "import yaml; [yaml.safe_load(open(f)) for f in ['.github/workflows/ci.yml']]; print('YAML valid')"
-    - name: Run ShellCheck
+    - name: Install Linters
       run: |
-        shellcheck bin/* lib/**/*.bash
+        sudo apt-get update && sudo apt-get install -y shellcheck
+        pip install yamllint
+    - name: Run Linters
+      run: |
+        ./scripts/lint.sh
         shellcheck --severity=error bin/* lib/**/*.bash
 
    test:
@@ -100,7 +100,7 @@ jobs:
       - name: Run approximate Bash coverage (lib only)
         run: |
           chmod +x scripts/coverage.sh
-          MIN_COVER=0 ./scripts/coverage.sh || true
+          MIN_COVER=90 COVER_MODE=functions ./scripts/coverage.sh
       - name: Upload coverage artifacts
         uses: actions/upload-artifact@v4
         if: always()
