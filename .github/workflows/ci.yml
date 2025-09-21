@@ -66,8 +66,9 @@ jobs:
     - uses: actions/checkout@v4
     - name: Install shfmt
       run: |
-        sudo curl -fsSL https://github.com/mvdan/sh/releases/latest/download/shfmt_v3.8.0_linux_amd64 -o /usr/local/bin/shfmt
-        sudo chmod +x /usr/local/bin/shfmt
+        curl -fsSL https://github.com/mvdan/sh/releases/latest/download/shfmt_v3.12.0_linux_amd64 -o shfmt
+        sudo install shfmt /usr/local/bin/
+        rm shfmt
     - name: Check shell formatting
       run: |
         # Check if files need formatting

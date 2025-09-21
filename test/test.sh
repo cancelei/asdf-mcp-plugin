@@ -24,11 +24,12 @@ fi
 
 # Test install_server unknown
 echo "Test: install_server unknown"
-output=$(install_server "unknown" "1.0.0" "/tmp/test" 2>&1 || true)
+output=$(bash -c '. ./lib/utils.bash && install_server "unknown" "1.0.0" "/tmp/test"' 2>&1 || true)
 if echo "$output" | grep -q "Unknown server type"; then
   echo "PASS"
 else
   echo "FAIL: install_server did not fail for unknown"
+  echo "Actual output: [$output]"
   exit 1
 fi
 
@@ -54,24 +55,23 @@ echo "PASS"
 
 # Test validate_claude_version invalid (mock npm)
 echo "Test: validate_claude_version invalid"
-npm() {
-  return 1
-}
-output=$(validate_claude_version "invalid" 2>&1 || true)
+output=$(bash -c '. ./lib/utils.bash && npm() { return 1; } && validate_claude_version "invalid"' 2>&1 || true)
 if echo "$output" | grep -q "not found"; then
   echo "PASS"
 else
   echo "FAIL: validate_claude_version did not fail for invalid"
+  echo "Actual output: [$output]"
   exit 1
 fi
 
 # Test check_status
 echo "Test: check_status"
-output=$(check_status)
+output=$(bash -c '. ./lib/utils.bash && check_status' 2>&1 || true)
 if echo "$output" | grep -q "Checking status"; then
   echo "PASS"
 else
   echo "FAIL: check_status output incorrect"
+  echo "Actual output: [$output]"
   exit 1
 fi
 
