@@ -3,6 +3,10 @@
 # Set plugin_dir for sourced domains
 plugin_dir="$(cd "$(dirname "$BATS_TEST_FILENAME")/.." && pwd)"
 
+# Load bats support
+load 'bats-support/load'
+load 'bats-assert/load'
+
 # Load the utils library
 load '../lib/utils.bash'
 
@@ -21,16 +25,14 @@ load '../lib/utils.bash'
 
 # Test install_claude_server with mocks
 @test "install_claude_server success" {
-  # Mock functions
   stub node 'echo "v20.0.0"'
-  stub npm 'echo "installed"'
-  stub npm 'echo "audit passed"' : view
-  # Create temp dir
+  stub npm 'echo "version info"' : view
+  stub npm 'echo "installed"' : install
+  stub npm 'echo "audit passed"' : audit
   temp_dir=$(mktemp -d)
   run install_claude_server "latest" "$temp_dir"
   [ "$status" -eq 0 ]
   [[ "$output" == *"installed successfully"* ]]
-  # Cleanup
   rm -rf "$temp_dir"
   unstub node
   unstub npm
@@ -38,14 +40,12 @@ load '../lib/utils.bash'
 
 # Test start_server with mocks
 @test "start_server claude-server" {
-  # Mock claude
   stub claude 'echo "running"'
-  # Mock get_install_path
-  stub get_install_path 'echo "/tmp/mock"'
+  stub asdf 'echo "mcp latest"'
   run start_server "claude-server"
   [ "$status" -eq 0 ]
   unstub claude
-  unstub get_install_path
+  unstub asdf
 }
 
 # Security test: malicious install_path

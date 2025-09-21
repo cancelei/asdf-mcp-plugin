@@ -13,6 +13,8 @@ jobs:
     - uses: actions/checkout@v4
     - name: Install ShellCheck
       run: sudo apt-get update && sudo apt-get install -y shellcheck
+    - name: Validate YAML
+      run: python3 -c "import yaml; [yaml.safe_load(open(f)) for f in ['.github/workflows/ci.yml']]; print('YAML valid')"
     - name: Run ShellCheck
       run: |
         shellcheck bin/* lib/**/*.bash
@@ -22,11 +24,16 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v4
-    - name: Install Bats
-      run: sudo apt-get update && sudo apt-get install -y bats
+    - name: Install Bats and support
+      run: |
+        sudo apt-get update && sudo apt-get install -y bats git
+        git clone https://github.com/bats-core/bats-support.git /tmp/bats-support
+        git clone https://github.com/bats-core/bats-assert.git /tmp/bats-assert
     - name: Run Bats Tests
       id: test
-      run: bats test/ || bash test/test.sh
+      run: |
+        export BATS_LIB_PATH=/tmp/bats-support:/tmp/bats-assert
+        bats test/ || bash test/test.sh
     - name: Comment on PR
       if: github.event_name == 'pull_request'
       uses: peter-evans/create-or-update-comment@v3
@@ -42,10 +49,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v4
-    - name: Install shfmt
-      run: go install mvdan.cc/sh/v3/cmd/shfmt@latest
-    - name: Check formatting
-      run: shfmt -d bin/* lib/**/*.bash test/*
+    - uses: mvdan/shfmt-action@v3
+      with:
+        shfmt-args: -d bin/* lib/**/*.bash test/*
 
   security:
     runs-on: ubuntu-latest

@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-set -euo pipefail
+set -eu
 
 GH_REPO="https://github.com/model-context-protocol/mcp"
 
@@ -9,16 +9,16 @@ fail() {
   exit 1
 }
 
-curl_opts=(-fsSL)
+curl_opts="-fsSL"
 
 if [ -n "${GITHUB_API_TOKEN:-}" ]; then
-  curl_opts=("${curl_opts[@]}" -H "Authorization: token $GITHUB_API_TOKEN")
+  curl_opts="$curl_opts -H \"Authorization: token $GITHUB_API_TOKEN\""
 fi
 
 # Source domain modules
-source "${plugin_dir}/lib/domains/validation.bash"
-source "${plugin_dir}/lib/domains/installation.bash"
-source "${plugin_dir}/lib/domains/startup.bash"
+. "${plugin_dir}/lib/domains/validation.bash"
+. "${plugin_dir}/lib/domains/installation.bash"
+. "${plugin_dir}/lib/domains/startup.bash"
 
 # List all available MCP server types
 list_servers() {
