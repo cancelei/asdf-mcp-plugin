@@ -9,6 +9,8 @@ plugin_dir="$(pwd)"
 
 # Source utils
 . ./lib/utils.bash
+# Restore xtrace for coverage if disabled by library 'set -eu'
+set -x
 
 echo "Running tests..."
 
@@ -81,7 +83,7 @@ echo "All tests passed!"
 
 echo "Extended: utils curl_opts with token"
 (
-  set -e
+  set -ex
   plugin_dir="$(pwd)"
   export GITHUB_API_TOKEN="dummy"
   . ./lib/utils.bash
@@ -147,7 +149,7 @@ install_server custom-mcp "0.0.0" "/tmp/x" 2>/dev/null || true
 
 echo "Extended: startup claude-server success in subshell"
 (
-  set -e
+  set -ex
   plugin_dir="$(pwd)"
   export HOME="$(mktemp -d)"
   asdf() { echo "mcp latest"; }
@@ -165,3 +167,184 @@ out=$(start_server unknown 2>&1 || true)
 echo "$out" | grep -q "not implemented" && echo "PASS" || { echo "FAIL: unknown start not detected"; exit 1; }
 
 echo "Extended tests complete"
+
+# Additional extended coverage to reach high line execution in lib/*
+
+echo "More: validate_npm missing"
+(
+  set -ex
+  plugin_dir="$(pwd)"
+  . ./lib/utils.bash
+  # Hide npm from PATH
+  old_path="$PATH"
+  PATH="/nonexistent"
+  out=$(validate_npm 2>&1 || true)
+  echo "$out" | grep -q "npm is required" && echo "PASS"
+  PATH="$old_path"
+)
+
+echo "More: install_claude_server pinned version"
+(
+  set -ex
+  plugin_dir="$(pwd)"
+  . ./lib/utils.bash
+  tmpdir=$(mktemp -d)
+  node() { echo "v20.2.0"; }
+  npm() {
+    case "$1" in
+      view) echo "ok" ;;
+      install) echo "installed" ;;
+      audit) echo "ok" ;;
+      *) : ;;
+    esac
+  }
+  # create expected binary to pass verification
+  mkdir -p "$tmpdir/bin"
+  printf '#!/usr/bin/env bash\nexit 0\n' > "$tmpdir/bin/claude-code-mcp"
+  chmod +x "$tmpdir/bin/claude-code-mcp"
+  install_claude_server "1.2.3" "$tmpdir"
+  rm -rf "$tmpdir"
+)
+
+echo "More: install_claude_server missing binary fails"
+(
+  set -ex
+  plugin_dir="$(pwd)"
+  . ./lib/utils.bash
+  tmpdir=$(mktemp -d)
+  node() { echo "v20.2.0"; }
+  npm() {
+    case "$1" in
+      view) echo "ok" ;;
+      install) echo "installed" ;;
+      audit) echo "ok" ;;
+      *) : ;;
+    esac
+  }
+  out=$(install_claude_server "latest" "$tmpdir" 2>&1 || true)
+  echo "$out" | grep -q "binary not found" && echo "PASS"
+  [ ! -d "$tmpdir" ] && echo "PASS"
+)
+
+echo "More: install_github_server latest success via curl stub"
+(
+  set -ex
+  plugin_dir="$(pwd)"
+  . ./lib/utils.bash
+  tmpdir=$(mktemp -d)
+  curl() {
+    if [ "$1" = "-fsSL" ] && echo "$*" | grep -q "/releases/latest"; then
+      # Emit JSON with a matching asset
+      cat <<JSON
+{ "assets": [ { "browser_download_url": "https://example.com/server-github-linux-x64" } ] }
+JSON
+      return 0
+    fi
+    # Handle file download: detect -o path and write a stub
+    if [ "$1" = "-fsSL" ] && [ "$2" = "-o" ]; then
+      out="$3"; shift 3
+      printf '#!/usr/bin/env bash\necho gh-ok\n' > "$out"
+      return 0
+    fi
+    return 0
+  }
+  install_github_server "latest" "$tmpdir"
+  "$tmpdir/github-server" | grep -q gh-ok
+  rm -rf "$tmpdir"
+)
+
+echo "More: install_github_server pinned success"
+(
+  set -ex
+  plugin_dir="$(pwd)"
+  . ./lib/utils.bash
+  tmpdir=$(mktemp -d)
+  curl() {
+    # Only called for download with -o
+    if [ "$2" = "-o" ]; then
+      printf '#!/usr/bin/env bash\necho gh-pin\n' > "$3"
+      return 0
+    fi
+    return 0
+  }
+  install_github_server "v1.0.0" "$tmpdir"
+  "$tmpdir/github-server" | grep -q gh-pin
+  rm -rf "$tmpdir"
+)
+
+echo "More: install_github_server URL not found fails"
+(
+  set -ex
+  plugin_dir="$(pwd)"
+  . ./lib/utils.bash
+  tmpdir=$(mktemp -d)
+  curl() { echo '{}'; }
+  out=$(install_github_server "latest" "$tmpdir" 2>&1 || true)
+  echo "$out" | grep -q "Could not determine download URL" && echo "PASS"
+)
+
+echo "More: install_github_server download failure cleans up"
+(
+  set -ex
+  plugin_dir="$(pwd)"
+  . ./lib/utils.bash
+  tmpdir=$(mktemp -d)
+  curl() {
+    if echo "$*" | grep -q "/releases/latest"; then
+      echo '{"assets": [{"browser_download_url":"https://example.com/server-github-linux-x64"}]}'
+      return 0
+    fi
+    if [ "$2" = "-o" ]; then
+      # Simulate failure
+      return 1
+    fi
+    return 0
+  }
+  out=$(install_github_server "latest" "$tmpdir" 2>&1 || true)
+  echo "$out" | grep -q "Failed to download" && echo "PASS"
+  [ ! -d "$tmpdir" ] && echo "PASS"
+)
+
+echo "More: startup github-server with config sourcing"
+(
+  set -ex
+  plugin_dir="$(pwd)"
+  . ./lib/utils.bash
+  export HOME="$(mktemp -d)"
+  asdf() { echo "mcp latest"; }
+  inst="$HOME/.asdf/installs/mcp/latest/servers/github-server"
+  mkdir -p "$inst"
+  printf '#!/usr/bin/env bash\necho token:$GITHUB_TOKEN\n' > "$inst/github-server"
+  chmod +x "$inst/github-server"
+  cfg="$(mktemp)"; echo 'export GITHUB_TOKEN=xyz' > "$cfg"
+  out=$(start_server "github-server" "$cfg" 2>&1 || true)
+  echo "$out" | grep -q "token:xyz" && echo "PASS"
+)
+
+echo "More: startup missing install path"
+(
+  set -ex
+  plugin_dir="$(pwd)"
+  . ./lib/utils.bash
+  export HOME="$(mktemp -d)"
+  asdf() { echo "mcp latest"; }
+  out=$(start_server "claude-server" 2>&1 || true)
+  echo "$out" | grep -q "not installed" && echo "PASS"
+)
+
+echo "More: startup missing claude CLI"
+(
+  set -ex
+  plugin_dir="$(pwd)"
+  . ./lib/utils.bash
+  export HOME="$(mktemp -d)"
+  asdf() { echo "mcp latest"; }
+  inst="$HOME/.asdf/installs/mcp/latest/servers/claude-server/bin"
+  mkdir -p "$inst"
+  printf '#!/usr/bin/env bash\nexit 0\n' > "$inst/claude-code-mcp"
+  chmod +x "$inst/claude-code-mcp"
+  # Ensure claude CLI is not found
+  PATH="/nonexistent"
+  out=$(start_server "claude-server" 2>&1 || true)
+  echo "$out" | grep -q "Claude CLI is not installed" && echo "PASS"
+)

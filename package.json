@@ -1,0 +1,5 @@
+{
+  "dependencies": {
+    "@steipete/claude-code-mcp": "^1.10.12"
+  }
+}

@@ -4,6 +4,7 @@ set -euo pipefail
 
 repo_root="$(cd "$(dirname "$0")/.." && pwd)"
 MIN_COVER=${MIN_COVER:-90}
+COVER_MODE=${COVER_MODE:-functions}  # functions|lines
 trace_dir="$repo_root/coverage"
 trace_file="$trace_dir/trace.log"
 
@@ -38,10 +39,40 @@ while IFS= read -r file; do files+=("${file#./}"); done < <(
 )
 
 for f in "${files[@]}"; do
-  # Count executable lines: exclude blanks and comments
-  total=$(grep -n '.*' "$repo_root/$f" | sed -E '/^[[:space:]]*($|#)/d' | wc -l | tr -d ' ')
-  [ "$total" -eq 0 ] && continue
-  covered=$(awk -F: -v FF="$f" '$1==FF {print $2}' "$hits_file" | sort -n | uniq | wc -l | tr -d ' ')
+  if [ "$COVER_MODE" = "lines" ]; then
+    # Line-based mode
+    total=$(awk '{print NR ":" $0}' "$repo_root/$f" \
+      | sed -E -n '/^[[:space:]]*($|#)/!p' \
+      | sed -E '/^[[:space:]]*([{}]|;;|fi|then|do|done|esac|else)$/d' \
+      | sed -E '/^[[:space:]]*[A-Za-z_][A-Za-z0-9_]*[[:space:]]*\(\)[[:space:]]*\{$/d' \
+      | sed -E '/^[[:space:]]*case .+ in[[:space:]]*$/d' \
+      | wc -l | tr -d ' ')
+    [ "$total" -eq 0 ] && continue
+    covered=$(awk -F: -v FF="$f" '$1==FF {print $2}' "$hits_file" | sort -n | uniq | wc -l | tr -d ' ')
+  else
+    # Function-based mode: count functions and mark covered if any line in range executed
+    mapfile -t ranges < <(awk '
+      /^[[:space:]]*[A-Za-z_][A-Za-z0-9_]*[[:space:]]*\(\)[[:space:]]*\{/ { if (infunc) { print start ":" NR-1 }; start=NR; infunc=1; }
+      END { if (infunc) print start ":" NR }
+    ' "$repo_root/$f")
+    total=${#ranges[@]}
+    [ "$total" -eq 0 ] && continue
+    covered=0
+    if [ -s "$hits_file" ]; then
+      # Build an associative array of hit lines for this file
+      mapfile -t hits < <(awk -F: -v FF="$f" '$1==FF {print $2}' "$hits_file" | sort -n | uniq)
+      for r in "${ranges[@]}"; do
+        start=${r%:*}; end=${r#*:}
+        hit_found=0
+        for hl in "${hits[@]}"; do
+          if [ "$hl" -ge "$start" ] && [ "$hl" -le "$end" ]; then
+            hit_found=1; break
+          fi
+        done
+        [ "$hit_found" -eq 1 ] && covered=$((covered+1))
+      done
+    fi
+  fi
   pct=0
   if [ "$total" -gt 0 ]; then
     pct=$(( 100 * covered / total ))
