@@ -4,7 +4,6 @@ set -euo pipefail
 
 GH_REPO="https://github.com/model-context-protocol/mcp"
 TOOL_NAME="mcp"
-TOOL_TEST="mcp --version"
 
 fail() {
   echo -e "asdf-$TOOL_NAME: $*"

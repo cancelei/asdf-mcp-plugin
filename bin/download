@@ -4,7 +4,6 @@ set -euo pipefail
 
 GH_REPO="https://github.com/model-context-protocol/mcp"
 TOOL_NAME="mcp"
-TOOL_TEST="mcp --version"
 
 fail() {
   echo -e "asdf-$TOOL_NAME: $*"
@@ -28,7 +27,7 @@ get_arch() {
   case $arch in
     x86_64) arch="amd64" ;;
     aarch64) arch="arm64" ;;
-    *) arch="$arch" ;;
+    *) ;;
   esac
   echo "$arch"
 }
